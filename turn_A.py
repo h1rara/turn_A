@@ -191,7 +191,7 @@ for i in (16, 17):
 
 
 
-#remove snr < 10 and < 4x4x2
+#remove snr < 10 and add dimensions
 
 for i in range(18):
 
@@ -213,6 +213,8 @@ for i in range(18):
 
     #fix nan
     a[np.isnan(a)]= 0.0
+    fb[np.isnan(fb)]= 0.0
+
 
     ll = []
     lb = []
@@ -233,67 +235,52 @@ for i in range(18):
         #emission signature
         em = np.multiply(b, fb)
 
-        #find dimensions
-        voxels = np.where(b==1)
+        if np.max(em) < 10.0:
 
-        if len(voxels[2]) == 0:
-            lmin = 0
-            lmax = 0
-
-        else:
-            lmin = min(voxels[2])
-            lmax = max(voxels[2])
-
-
-        if len(voxels[1]) == 0:
-                bmin = 0
-                bmax = 0
-
-        else:
-            bmin = min(voxels[1])
-            bmax = max(voxels[1])
-
-        if len(voxels[0]) == 0:
-            vmin = 0
-            vmax = 0
-
-        else:
-            vmin = min(voxels[0])
-            vmax = max(voxels[0])
-
-
-        l = float(lmax - lmin)
-        b = float(bmax - bmin)
-        v = float(vmax - vmin)
-
-        if np.max(em) < 10:
-
-            #remove cloud from catalog and cube
+            #remove entry from cat
             cat.remove_row(j)
+            #remove cloud from cube
             a[a==i]=-1.0
 
         else:
-            #check dimensions (4x4x4)
-            if l < 4:
-                #remove from catalod and cube
-                cat.remove_row(j)
-                a[a==i]=-1.0
 
-            elif b < 4:
-                #remove from catalod and cube
-                cat.remove_row(j)
-                a[a==i]=-1.0
+            #find dimensions
+            voxels = np.where(b==1)
+
+            if len(voxels[2]) == 0:
+                lmin = 0
+                lmax = 0
 
             else:
-                if v < 2:
-                #remove from catalog and cube
-                    cat.remove_row(j)
-                    a[a==i]=-1.0
+                lmin = min(voxels[2])
+                lmax = max(voxels[2])
 
-                else:
-                    ll.append(l)
-                    lb.append(b)
-                    lv.append(v)
+
+            if len(voxels[1]) == 0:
+                bmin = 0
+                bmax = 0
+
+            else:
+                bmin = min(voxels[1])
+                bmax = max(voxels[1])
+
+            if len(voxels[0]) == 0:
+                vmin = 0
+                vmax = 0
+
+            else:
+                vmin = min(voxels[0])
+                vmax = max(voxels[0])
+
+
+            l = float(lmax - lmin)
+            b = float(bmax - bmin)
+            v = float(vmax - vmin)
+
+
+            ll.append(l)
+            lb.append(b)
+            lv.append(v)
 
     #add columns
     cat['l_size'] = ll
