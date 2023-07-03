@@ -216,6 +216,11 @@ for i in range(18):
     fb[np.isnan(fb)]= 0.0
 
 
+
+
+
+
+
     ll = []
     lb = []
     lv = []
@@ -224,23 +229,31 @@ for i in range(18):
     #for each entry in the region catalog
     for j in range(len(cat)-1, -1, -1):
 
-        print(j)
+        print(j, cat['_idx'][j])
 
 
         #isolate each cloud
+        ix = float(cat['_idx'][j])
+
         b = a
-        b[b==i]=1
-        b[b!=1]=0
+        b[b==ix]=1.0
+        b[b!=1.0]=0.0
 
         #emission signature
         em = np.multiply(b, fb)
+        print(np.max(em))
+
+
+
+
 
         if np.max(em) < 10.0:
+
 
             #remove entry from cat
             cat.remove_row(j)
             #remove cloud from cube
-            a[a==i]=-1.0
+            a[a==ix]=-1.0
 
         else:
 
@@ -291,6 +304,11 @@ for i in range(18):
     #write new cube and catalog
     cat.write('final_cat_region'+str(i)+'.fits', format='fits', overwrite=True)
     fits.writeto('final_cohrs_'+str(i)+'.fits',a, hd, overwrite=True)
+
+
+
+
+
 
 
 #join catalogs
@@ -407,6 +425,10 @@ T['gal_id'] = gid
 
 
 T.write('full_cohrs_cat.fits', format='fits', overwrite = True)
+
+
+
+
 
 
 
