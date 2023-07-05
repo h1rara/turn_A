@@ -12,20 +12,56 @@ import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import scipy
+import copy
 
-os.chdir('/home/siwa/data/COHRS')
 
 
-#remove clouds touching the edges of the field of observation
 
-for i in (16, 17):
+os.chdir('/home/siwa/data/COHRS/')
+
+#prepare catalogues
+
+for i in range(18):
+
 
     hdu_1 = fits.open('deg_snr_fb'+str(i)+'_3_clusters_asgn.fits')[0]
     a = hdu_1.data
     hd = hdu_1.header
 
+  #  hdu_1 = fits.open('deg_snr_fb'+str(i)+'_A_leaf_asgn.fits')[0]
+   # l = hdu_1.data
+    #hd = hdu_1.header
 
     data1 = fits.getdata('deg_snr_fb'+str(i)+'_3_catalog.fits', 1)
+    cat= Table(data1)
+
+    b = np.unique(a)
+
+    for j in range(len(cat)-1, -1, -1):
+        print(i, j)
+
+        if cat['_idx'][j] not in b:
+            cat.remove_row(j)
+
+    cat.write('ready_cat_region_'+str(i)+'.fits', format='fits', overwrite=True)
+
+
+
+#remove clouds touching the edges of the field of observation
+
+for i in range(18):
+
+    hdu_1 = fits.open('deg_snr_fb'+str(i)+'_3_clusters_asgn.fits')[0]
+    a = hdu_1.data
+    hd = hdu_1.header
+
+  #  hdu_1 = fits.open('deg_snr_fb'+str(i)+'_A_leaf_asgn.fits')[0]
+   # l = hdu_1.data
+    #hd = hdu_1.header
+
+
+
+    data1 = fits.getdata('ready_cat_region_'+str(i)+'.fits', 1)
     cat= Table(data1)
 
     if i == 16:
@@ -59,7 +95,7 @@ for i in (16, 17):
     #fix catalog
 
         for g in range(len(cat)-1, -1, -1):
-            if cat['_idx'][g] in remove_list:
+            if float(cat['_idx'][g])in remove_list:
                 cat.remove_row(g)
 
         cat.write('clean_cat_region_'+str(i)+'.fits', format='fits', overwrite=True)
@@ -180,13 +216,17 @@ for i in (16, 17):
         cat.write('clean_cat_region_'+str(i)+'.fits', format='fits', overwrite=True)
 
 
-    #fix cube
+        #fix cube
 
         for k in remove_list:
 
             a[a==k] = -1.0
 
         fits.writeto('clean_cohrs_'+str(i)+'.fits',a, hd, overwrite=True)
+
+
+
+#####OK!
 
 
 
@@ -201,6 +241,7 @@ for i in range(18):
     data1 = fits.getdata('clean_cat_region_'+str(i)+'.fits', 1)
     cat= Table(data1)
 
+
     #open cluster assignments
     hdu_1 = fits.open('clean_cohrs_'+str(i)+'.fits')[0]
     a = hdu_1.data
@@ -211,15 +252,10 @@ for i in range(18):
     fb = hdu_1.data
     hd_fb = hdu_1.header
 
+
     #fix nan
-    a[np.isnan(a)]= 0.0
+    #a[np.isnan(a)]= 0.0
     fb[np.isnan(fb)]= 0.0
-
-
-
-
-
-
 
     ll = []
     lb = []
@@ -229,22 +265,24 @@ for i in range(18):
     #for each entry in the region catalog
     for j in range(len(cat)-1, -1, -1):
 
-        print(j, cat['_idx'][j])
-
+        print(i, j, cat['_idx'][j])
 
         #isolate each cloud
         ix = float(cat['_idx'][j])
 
-        b = a
+        b = copy.deepcopy(a)
+        b[b!=ix]=-1.0
         b[b==ix]=1.0
-        b[b!=1.0]=0.0
+        b[b<0.0]=0.0
+
+
+       # c = np.max(em, axis = 0)
+       # plt.imshow(c)
+       # plt.show()
 
         #emission signature
         em = np.multiply(b, fb)
         print(np.max(em))
-
-
-
 
 
         if np.max(em) < 10.0:
@@ -306,8 +344,7 @@ for i in range(18):
     fits.writeto('final_cohrs_'+str(i)+'.fits',a, hd, overwrite=True)
 
 
-
-
+    
 
 
 
