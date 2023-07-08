@@ -736,7 +736,7 @@ data1 = fits.getdata('full_cohrs_cat.fits', 1)
 fc= Table(data1)
 
 
-f = fc
+f = copy.deepcopy(fc)
 
 
 data1 = fits.getdata('cohrs_distances_from_chimps.fits', 1)
