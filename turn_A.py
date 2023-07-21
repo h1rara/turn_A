@@ -1,11 +1,11 @@
 import os
-from astropy.table import Table, vstack
-from astropy.io import fits
+from astropy.table import Table, vstack, unique, hstack
+from astropy.io import fits, ascii
 import astropy.units as u
 import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
-
+import statistics
 from astropy import wcs
 import warnings
 import numpy as np
@@ -13,7 +13,9 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import scipy
 import copy
-
+import math
+import cmath
+import random
 
 
 
@@ -235,6 +237,14 @@ for i in range(18):
 
 for i in range(18):
 
+
+data = fits.getdata('asu.fits', 1)
+ag_table = Table(data)
+mask = (ag_table['_Glon']>27.0)
+ag_table = ag_table[mask]
+mask = (ag_table['_Glon']<47.0)
+ag_table = ag_table[mask]
+
     print(i)
 
     #open catalog
@@ -252,6 +262,14 @@ for i in range(18):
     fb = hdu_1.data
     hd_fb = hdu_1.header
 
+
+
+data = fits.getdata('asu.fits', 1)
+ag_table = Table(data)
+mask = (ag_table['_Glon']>27.0)
+ag_table = ag_table[mask]
+mask = (ag_table['_Glon']<47.0)
+ag_table = ag_table[mask]
 
     #fix nan
     #a[np.isnan(a)]= 0.0
@@ -344,16 +362,21 @@ for i in range(18):
     fits.writeto('final_cohrs_'+str(i)+'.fits',a, hd, overwrite=True)
 
 
-    
+
 
 
 
 #join catalogs
 
+data1 = fits.getdata('final_cat_region0.fits',
 
-
-
-data1 = fits.getdata('final_cat_region0.fits', 1)
+data = fits.getdata('asu.fits', 1)
+ag_table = Table(data)
+mask = (ag_table['_Glon']>27.0)
+ag_table = ag_table[mask]
+mask = (ag_table['_Glon']<47.0)
+ag_table = ag_table[mask]
+1)
 cat_0= Table(data1)
 cat_0['REGION'] = [0]*len(cat_0)
 
@@ -399,7 +422,7 @@ cat_8['REGION'] = [8]*len(cat_8)
 data1 = fits.getdata('final_cat_region9.fits', 1)
 cat_9= Table(data1)
 cat_9['REGION'] = [9]*len(cat_9)
-
+https://www.youtube.com/watch?v=DieG5aetBL0
 
 data1 = fits.getdata('final_cat_region10.fits', 1)
 cat_10= Table(data1)
@@ -429,6 +452,7 @@ data1 = fits.getdata('final_cat_region16.fits', 1)
 cat_16= Table(data1)
 cat_16['REGION'] = [16]*len(cat_16)
 
+T.write('full_cohrs_cat.fits', format='fits', overwrite = True)
 
 data1 = fits.getdata('final_cat_region17.fits', 1)
 cat_17= Table(data1)
@@ -463,13 +487,73 @@ T['gal_id'] = gid
 
 T.write('full_cohrs_cat.fits', format='fits', overwrite = True)
 
+https://www.youtube.com/watch?v=DieG5aetBL0
+
+
+####remove clouds that are smaller than 4x4x2
+
+#open catalog
+data1 = fits.getdata('full_cohrs_cat.fits', 1)
+cat= Table(data1)
+
+for i in range(len(cat)-1, -1, -1):
+    if cat['l_size'][i] < 4 :
+        cat.remove_row(i)
+
+
+
+for i in range(len(cat)-1, -1, -1):
+    if cat['b_size'][i] < 4 :
+        cat.remove_row(i)
+
+
+for i in range(len(cat)-1, -1, -1):
+    if cat['v_size'][i] < 2 :
+        cat.remove_row(i)
+
+
+cat.write('full_cohrs_cat.fits', format='fits', overwrite = True)
 
 
 
 
 
 
-#add distances
+#make clean cubes
+
+data1 = fits.getdata('full_cohrs_cat.fits', 1)
+cat= Table(data1)
+
+for i in range(18):
+    #creat a list of clouds in a given region
+
+    mask = (cat['REGION']==i)
+    cat2 = cat[mask]
+
+    clouds_to_keep = list(cat2['_idx'])
+
+    #open the corresponding cube
+
+    hdu = fits.open('final_cohrs_'+str(i)+'.fits')[0]
+    a = hdu.data
+    hd = hdu.header
+
+    #clouds in cube
+    clouds_in_cube = list(np.unique(a))
+
+    #remove the clouds that are not in clouds_to_keep
+
+
+    for j in clouds_in_cube:
+
+            if j not in clouds_to_keep:
+                a[a==j]=-1.0
+
+    #save cube
+    fits.writeto('reduced_cohrs_'+str(i)+'.fits',a, hd, overwrite=True)
+
+
+
 
 
 
@@ -586,78 +670,78 @@ def get_label (image, hd, l, b, v):
 
 #scimes open CHIMPS maps
 
-hdu_1 = fits.open('final_cohrs_0.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_0.fits')[0]
 chimps0 = hdu_1.data
 hd_0 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_1.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_1.fits')[0]
 chimps1 = hdu_1.data
 hd_1 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_2.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_2.fits')[0]
 chimps2 = hdu_1.data
 hd_2 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_3.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_3.fits')[0]
 chimps3 = hdu_1.data
 hd_3 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_4.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_4.fits')[0]
 chimps4 = hdu_1.data
 hd_4 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_5.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_5.fits')[0]
 chimps5 = hdu_1.data
 hd_5 = hdu_1.header
 
 
-hdu_1 = fits.open('final_cohrs_6.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_6.fits')[0]
 chimps6 = hdu_1.data
 hd_6 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_7.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_7.fits')[0]
 chimps7 = hdu_1.data
 hd_7 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_8.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_8.fits')[0]
 chimps8 = hdu_1.data
 hd_8 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_9.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_9.fits')[0]
 chimps9 = hdu_1.data
 hd_9 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_10.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_10.fits')[0]
 chimps10 = hdu_1.data
 hd_10 = hdu_1.header
 
 
-hdu_1 = fits.open('final_cohrs_11.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_11.fits')[0]
 chimps11 = hdu_1.data
 hd_11 = hdu_1.header
 
 
-hdu_1 = fits.open('final_cohrs_12.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_12.fits')[0]
 chimps12 = hdu_1.data
 hd_12 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_13.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_13.fits')[0]
 chimps13 = hdu_1.data
 hd_13 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_14.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_14.fits')[0]
 chimps14 = hdu_1.data
 hd_14 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_15.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_15.fits')[0]
 chimps15 = hdu_1.data
 hd_15 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_16.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_16.fits')[0]
 chimps16 = hdu_1.data
 hd_16 = hdu_1.header
 
-hdu_1 = fits.open('final_cohrs_17.fits')[0]
+hdu_1 = fits.open('reduced_cohrs_17.fits')[0]
 chimps17 = hdu_1.data
 hd_17 = hdu_1.header
 
@@ -670,6 +754,9 @@ data1 = fits.getdata('solenoidal.fits', 1)
 cat= Table(data1)
 
 cohrs_galid = []
+
+
+#####OK
 
 
 for i in range(len(cat)):
@@ -696,9 +783,13 @@ for i in range(len(cat)):
             cohrs_galid.append('NA')
 
 
+
+
 cat['cohrs_gal_id'] = cohrs_galid
 
 cat.write('solenoidal_with_cohrs_galid.fits', format='fits', overwrite=True)
+
+
 
 uni = unique(cat, keys= ['cohrs_gal_id']) #full table
 
@@ -711,21 +802,208 @@ uni2 = uni2[0:len(uni2)-1]
 
 
 dist = []
-galcen = []
+#galcen = []
 
 for i in uni2:
+    print(i)
 
     mask = (cat['cohrs_gal_id'] == i)
     cat2 = cat[mask]
 
     dist.append(statistics.mode(cat2['gistance']))
-    galcen.append(statistics.mode(cat2['galcen_distance']))
+#    galcen.append(statistics.mode(cat2['galcen_distance']))
 
 
-uni['cohrs_galcen_distance'] = galcen
+#uni['cohrs_galcen_distance'] = galcen
 uni['cohrs_distance'] = dist
 
 uni.write('cohrs_distances_from_chimps.fits', format='fits', overwrite=True)
+
+
+
+
+
+
+####Distances with Atlasgal
+
+#start with fc (same idea as with CHIMPS)
+
+#scimes open CHIMPS maps
+
+hdu_1 = fits.open('reduced_cohrs_0.fits')[0]
+chimps0 = hdu_1.data
+hd_0 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_1.fits')[0]
+chimps1 = hdu_1.data
+hd_1 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_2.fits')[0]
+chimps2 = hdu_1.data
+hd_2 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_3.fits')[0]
+chimps3 = hdu_1.data
+hd_3 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_4.fits')[0]
+chimps4 = hdu_1.data
+hd_4 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_5.fits')[0]
+chimps5 = hdu_1.data
+hd_5 = hdu_1.header
+
+
+hdu_1 = fits.open('reduced_cohrs_6.fits')[0]
+chimps6 = hdu_1.data
+hd_6 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_7.fits')[0]
+chimps7 = hdu_1.data
+hd_7 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_8.fits')[0]
+chimps8 = hdu_1.data
+hd_8 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_9.fits')[0]
+chimps9 = hdu_1.data
+hd_9 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_10.fits')[0]
+chimps10 = hdu_1.data
+hd_10 = hdu_1.header
+
+
+hdu_1 = fits.open('reduced_cohrs_11.fits')[0]
+chimps11 = hdu_1.data
+hd_11 = hdu_1.header
+
+
+hdu_1 = fits.open('reduced_cohrs_12.fits')[0]
+chimps12 = hdu_1.data
+hd_12 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_13.fits')[0]
+chimps13 = hdu_1.data
+hd_13 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_14.fits')[0]
+chimps14 = hdu_1.data
+hd_14 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_15.fits')[0]
+chimps15 = hdu_1.data
+hd_15 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_16.fits')[0]
+chimps16 = hdu_1.data
+hd_16 = hdu_1.header
+
+hdu_1 = fits.open('reduced_cohrs_17.fits')[0]
+chimps17 = hdu_1.data
+hd_17 = hdu_1.header
+
+
+chimps_data = (chimps0, chimps1, chimps2, chimps3, chimps4, chimps5, chimps6, chimps7, chimps8, chimps9, chimps10, chimps11, chimps12, chimps13, chimps14, chimps15, chimps16, chimps17)
+chimps_hd = (hd_0, hd_1, hd_2, hd_3, hd_4, hd_5, hd_6, hd_7, hd_8, hd_9, hd_10, hd_11, hd_12, hd_13, hd_14, hd_15, hd_16, hd_17)
+
+
+#Fix Atlasgal catalog
+
+#hi-Gal table
+
+
+
+data = fits.getdata('asu.fits', 1)
+ag_table = Table(data)
+mask = (ag_table['_Glon']>27.0)
+ag_table = ag_table[mask]
+mask = (ag_table['_Glon']<47.0)
+ag_table = ag_table[mask]
+
+
+cat = ag_table
+
+#check radial velocities
+for i in range(len(cat)-1, -1, -1):
+    print(i)
+    if np.isnan(cat['VLSR'][i]):
+        cat.remove_row(i)
+
+
+cat.write('ag_chimps_cat.fits', format = 'fits', overwrite = True)
+
+data1 = fits.getdata('ag_chimps_cat.fits', 1)
+cat= Table(data1)
+
+cohrs_galid = []
+
+for i in range(len(cat)):
+
+    print(i)
+
+    x = cat['_Glon'][i]
+    y = cat['_Glat'][i]
+    z = cat['VLSR'][i] #/1000 #km/s
+
+    idx = []
+
+    for g in range(18):
+
+        idx = get_label(chimps_data[g], chimps_hd[g], x, y, z)
+
+        if idx != -1.0:
+            cohrs_galid.append(str(g)+'_'+str(idx))
+
+            break
+
+
+        if g == 17: #the loop wasnt broken before, so idx = -1.0 in all regions
+            cohrs_galid.append('NA')
+
+
+
+
+cat['cohrs_gal_id'] = cohrs_galid
+
+
+
+uni = unique(cat, keys= ['cohrs_gal_id']) #full table
+
+uni2 = unique(cat, keys= ['cohrs_gal_id'])['cohrs_gal_id'] #column
+
+#remove 'NA' entry (last of the list)
+
+uni = uni[0:len(uni)-1]
+uni2 = uni2[0:len(uni2)-1]
+
+
+dist = []
+#galcen = []
+
+for i in uni2:
+    print(i)
+
+    mask = (cat['cohrs_gal_id'] == i)
+    cat2 = cat[mask]
+
+    dist.append(statistics.mode(cat2['Dist']))
+#    galcen.append(statistics.mode(cat2['galcen_distance']))
+
+
+#uni['cohrs_galcen_distance'] = galcen
+uni['cohrs_distance'] = dist
+
+uni.write('cohrs_distances_from_ag.fits', format='fits', overwrite=True)
+
+
+
+
+
+######Make distance assignments
+
 
 
 #open COHRS catalogue and remove all entries that are in uni
@@ -739,77 +1017,207 @@ fc= Table(data1)
 f = copy.deepcopy(fc)
 
 
+
+#cohrs distance from chimps - priority
+
 data1 = fits.getdata('cohrs_distances_from_chimps.fits', 1)
 cc= Table(data1)
 
-galid = list(cc['cohrs_gal_id'])
+galid_cc = list(cc['cohrs_gal_id'])
 
 
+#cohrs sources without chimps distances
 for i in range(len(fc)-1, -1, -1):
-    if fc['gal_id'][i] in galid:
+    if fc['gal_id'][i] in galid_cc:
         fc.remove_row(i)
 
-
-galid = galid[0:(len(galid)-2)]
-
+ #cohrs sources with CHIMPS distances
 for i in range(len(f)-1, -1, -1):
-    if f['gal_id'][i] not in galid:
+     if f['gal_id'][i] not in galid:
         f.remove_row(i)
 
 
 
 
-# estimate Reid distances for the sources that are left
+data1 = fits.getdata('cohrs_distances_from_ag.fits', 1)
+ac= Table(data1)
 
-p=[0.5]*len(fc)
-   # z3['p']=p
-
-z3 = fc
+galid_ag = list(ac['cohrs_gal_id'])
 
 
-ascii.write([z3['gal_id'], z3['x_cen'], z3['y_cen'], z3['v_cen']/1000, p, z3['gal_id']], 'sources_info.inp', names=['id','l', 'b', 'v', 'p', 'extra'], overwrite=True)
-
-
-
-#read in Reid distances
-
-ta1=Table.read('output.dat', format='ascii')
-
-dist_col=ta1['col4']
-
-dist_col = [0.0 if math.isnan(y) else y for y in dist_col]
-
-z3['distance']=dist_col
-
-
-dist2 = []
-
-for i in range(len(z3)):
-
-    upper_limit = z3['distance'][i] - 1.0
-    lower_limit = z3['distance'][i] - 1.0
-    dist2.append(random() * (upper_limit - lower_limit) + lower_limit)
-
-z3['distance2'] = dist2
-
-
-
-f['distance'] = cc['cohrs_distance']
-
-
-f['distance2'] = 0*len(f)
-
-T = vstack([f, ze])
-
-T.write('full_cohrs_with_distances', format='fits', overwrite = True)
+#cohrs sources without AG distances
+for i in range(len(fc)-1, -1, -1):
+    if fc['gal_id'][i] in galid_ag:
+        fc.remove_row(i)
 
 
 
 
+distance = [0]*len(f)
+
+for i in range(len(f)):
+    if f['gal_id'][i] in galid_ag:
+        ind = galid_ag.index(f['gal_id'][i])
+        distance[i] = ac['cohrs_distance'][ind]
+
+    if f['gal_id'][i] in galid_cc:
+        ind = galid_cc.index(f['gal_id'][i])
+        distance[i] = cc['cohrs_distance'][ind]
+
+f['distance'] = distance
+
+
+f.write('cohrs_cat.fits', format='fits', overwrite = True)
+
+
+
+###Galcen distance and distances with rotation curve
+
+
+#open cohrs_cat.fits
+data1 = fits.getdata('cohrs_cat.fits', 1)
+t= Table(data1)
+
+
+def omega (l, b, v):
+
+    l = math.radians(l)
+    b = math.radians(b)
+
+    K = 1 + v/(220*math.sin(l)*math.cos(b))
+
+    return K
+
+
+# def f(a1, c, a3, K):
+#
+#     return a1*Y**c + a3/Y - K
+
+a1, a2, a3 = 1.0077, 0.0394, 0.0071
+
+R0, omega0 = 8.5, 220
+
+
+
+omegas = []
+Ks = []
+
+
+for i in range(len(t)):
+
+    K= omega(t['x_cen'][i], t['y_cen'][i], t['v_cen'][i]/1000)
+    print(K)
+    Ks.append(K)
+
+
+
+guess1 = []
+
+
+for i in range(len(t)):
+
+    if t['v_cen'][i] < 17.4:
+        guess1.append(2.0)
+
+    elif t['v_cen'][i] > 113.4:
+        guess1.append(6.0)
+
+    else:
+        guess1.append(4.0)
+
+
+gcd2 = []
+
+
+from scipy.optimize import fsolve
+
+for i in range(len(t)):
+
+    K = Ks[i]
+    f=lambda x: a1*x**a2 -K*x + a3
+    gcd2.append(fsolve(f, guess1[i]))
 
 
 
 
+GCD_2 = []
+
+
+
+
+for i in range(len(gcd2)):
+
+    GCD_2.append(gcd2[i][0]*8.5)
+
+
+t['galcen_dist'] = GCD_2
+
+t.write('cohrs_cat.fits', format='fits', overwrite = True)
+
+
+##now heliocentric distances
+
+#open cohrs_cat.fits
+data1 = fits.getdata('cohrs_cat.fits', 1)
+t= Table(data1)
+
+dist = []
+
+for i in range(len(t)):
+
+    if t['distance'][i] == 0.0:
+        a = (math.cos(math.radians(t['y_cen'][i])))**2
+        b = -2*R0*math.cos(math.radians(t['y_cen'][i]))*math.cos(math.radians(t['x_cen'][i]))
+        c = R0**2 - t['galcen_dist'][i]**2
+
+        d = (b**2) - (4*a*c)
+
+        if d < 0.0:
+            dist.append(R0*math.cos(math.radians(t['x_cen'][i]))/math.cos(math.radians(t['y_cen'][i])))
+            print('complex')
+
+        elif d ==0:
+            dist.append((-b-cmath.sqrt(d))/(2*a))
+
+
+        elif d > 0:
+            print('else')
+            sol1 = np.real((-b-cmath.sqrt(d))/(2*a))
+            sol2 = np.real((-b+cmath.sqrt(d))/(2*a))
+
+            if sol1  > sol2:
+                near = sol2
+                far = sol1
+                h =  R0*math.sin(math.radians(t['y_cen'][i]))
+
+                #check condition
+                if h > 0.120:
+                    dist.append(near)
+
+                else:
+                    dist.append(far)
+
+            else:
+                near = sol1
+                far = sol2
+                h =  R0*math.sin(math.radians(t['y_cen'][i]))
+
+                #check condition
+                if h > 0.120:
+                    dist.append(near)
+
+                else:
+                    dist.append(far)
+
+
+    else:
+        dist.append(t['distance'][i])
+
+
+
+t['distance2'] = dist
+
+t.write('cohrs_cat.fits', format='fits', overwrite = True)
 
 
 
